@@ -13,6 +13,8 @@ export interface ScanRow {
   week52High: number | null;
   /** Trailing P/E. Non-positive / unavailable is normalized to null. */
   trailingPE: number | null;
+  /** Forward P/E based on consensus earnings estimates. Non-positive / unavailable is null. */
+  forwardPE: number | null;
   /** Dividend yield expressed as a percentage value (e.g. 3.05 means 3.05%). */
   dividendYieldPercent: number | null;
   /** Current price in `currency`. Optional — populated only when the provider quote is available. */

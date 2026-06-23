@@ -13,6 +13,7 @@ function row(ticker: string, source: string): ScanRow {
     week52Low: 1,
     week52High: 2,
     trailingPE: 10,
+    forwardPE: null,
     dividendYieldPercent: 1,
     currentPrice: 1.5,
     rangePosition: 0.5,

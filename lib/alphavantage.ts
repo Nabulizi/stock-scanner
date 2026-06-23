@@ -35,6 +35,7 @@ interface AvOverview {
   MarketCapitalization?: string;
   PERatio?: string;
   TrailingPE?: string;
+  ForwardPE?: string;
   DividendYield?: string;
   '52WeekHigh'?: string;
   '52WeekLow'?: string;
@@ -79,6 +80,7 @@ export function normalizeAlphaVantage(
   const low = avNumber(overview?.['52WeekLow']);
   const high = avNumber(overview?.['52WeekHigh']);
   const pe = avNumber(overview?.TrailingPE ?? overview?.PERatio);
+  const forwardPe = avNumber(overview?.ForwardPE);
   const yieldDecimal = avNumber(overview?.DividendYield);
   const rawPrice = avNumber(quote?.['Global Quote']?.['05. price']);
   const currentPrice = rawPrice != null && rawPrice > 0 ? rawPrice : null;
@@ -93,6 +95,7 @@ export function normalizeAlphaVantage(
     week52Low: low,
     week52High: high,
     trailingPE: pe != null && pe > 0 ? pe : null,
+    forwardPE: forwardPe != null && forwardPe > 0 ? forwardPe : null,
     // Decimal fraction -> percent. A real 0 (non-payer) is preserved.
     dividendYieldPercent: yieldDecimal == null ? null : yieldDecimal * 100,
     currentPrice,

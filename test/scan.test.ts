@@ -14,6 +14,7 @@ function makeRow(ticker: string): ScanRow {
     week52Low: 1,
     week52High: 2,
     trailingPE: 10,
+    forwardPE: null,
     dividendYieldPercent: 0,
     retrievedAt: new Date().toISOString()
   };

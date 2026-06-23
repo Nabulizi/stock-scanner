@@ -12,6 +12,7 @@ function makeRow(ticker: string, cached = false): ScanRow {
     week52Low: 1,
     week52High: 2,
     trailingPE: 10,
+    forwardPE: null,
     dividendYieldPercent: 0,
     cached,
     retrievedAt: '2026-06-19T00:00:00.000Z'

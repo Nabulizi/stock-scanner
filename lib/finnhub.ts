@@ -85,6 +85,7 @@ export function normalizeFinnhub(
 ): ScanRow {
   const marketCapMillions = toNumber(profile.marketCapitalization);
   const peTtm = toNumber(metric['peTTM']);
+  const forwardPeRaw = toNumber(metric['forwardPE']);
   const low = toNumber(metric['52WeekLow']);
   const high = toNumber(metric['52WeekHigh']);
   // A real stock price is never <= 0; treat that as "no price" (unavailable).
@@ -103,6 +104,8 @@ export function normalizeFinnhub(
     week52High: high,
     // Negative / zero P/E (unprofitable) is not a meaningful trailing P/E.
     trailingPE: peTtm != null && peTtm > 0 ? peTtm : null,
+    // Forward P/E from consensus estimates. Non-positive is meaningless.
+    forwardPE: forwardPeRaw != null && forwardPeRaw > 0 ? forwardPeRaw : null,
     // Already a percentage per Finnhub docs. A real 0 (non-payer) is preserved.
     dividendYieldPercent: toNumber(metric['dividendYieldIndicatedAnnual']),
     currentPrice,

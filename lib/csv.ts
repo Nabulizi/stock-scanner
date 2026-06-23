@@ -11,7 +11,8 @@ const HEADERS = [
   '52W Low',
   '52W High',
   '52W Position',
-  'P/E',
+  'P/E (TTM)',
+  'P/E (Fwd)',
   'Dividend Yield',
   'Retrieved At (UTC)'
 ];
@@ -49,6 +50,7 @@ export function toCsv(rows: ScanRow[]): string {
       formatCurrency(r.week52High, r.currency),
       rangePositionCell(r.rangePosition),
       formatPe(r.trailingPE),
+      formatPe(r.forwardPE),
       formatPercent(r.dividendYieldPercent),
       r.retrievedAt
     ];

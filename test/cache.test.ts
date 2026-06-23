@@ -12,6 +12,7 @@ function row(ticker: string, retrievedAt: string): ScanRow {
     week52Low: null,
     week52High: null,
     trailingPE: null,
+    forwardPE: null,
     dividendYieldPercent: null,
     retrievedAt
   };

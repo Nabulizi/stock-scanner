@@ -21,6 +21,7 @@ function row(over: Partial<ScanRow>): ScanRow {
     week52Low: 10,
     week52High: 20,
     trailingPE: 15,
+    forwardPE: null,
     dividendYieldPercent: 2,
     retrievedAt: '2026-06-19T00:00:00.000Z',
     ...over

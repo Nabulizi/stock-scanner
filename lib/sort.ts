@@ -6,6 +6,7 @@ export type SortKey =
   | 'marketCap'
   | 'currentPrice'
   | 'trailingPE'
+  | 'forwardPE'
   | 'dividendYieldPercent'
   | 'week52High'
   | 'week52Low';
@@ -16,6 +17,7 @@ const NUMERIC_KEYS: SortKey[] = [
   'marketCap',
   'currentPrice',
   'trailingPE',
+  'forwardPE',
   'dividendYieldPercent',
   'week52High',
   'week52Low'

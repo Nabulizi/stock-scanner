@@ -86,13 +86,14 @@ const COLUMNS: Column[] = [
   // Merged identity column sorts by ticker only. Sorting by company name is
   // intentionally dropped along with the separate Company column.
   { key: 'ticker', label: 'Symbol', numeric: false, sortable: true, identity: true, width: '20%' },
-  { key: 'marketCap', label: 'Market Cap', numeric: true, sortable: true, width: '16%', render: (r) => formatMarketCap(r.marketCap, r.currency) },
-  { key: 'currentPrice', label: 'Price', numeric: true, sortable: false, width: '16%', render: (r) => formatCurrency(r.currentPrice ?? null, r.currency) },
+  { key: 'marketCap', label: 'Market Cap', numeric: true, sortable: true, width: '14%', render: (r) => formatMarketCap(r.marketCap, r.currency) },
+  { key: 'currentPrice', label: 'Price', numeric: true, sortable: false, width: '13%', render: (r) => formatCurrency(r.currentPrice ?? null, r.currency) },
   // Derived metric with no backing sort key, so this column is not sortable
   // (sorting lives in lib/sort and only supports raw ScanRow fields).
-  { key: 'week52High', label: '% From High', numeric: true, sortable: false, width: '16%', render: (r) => <PctFromHigh row={r} /> },
-  { key: 'trailingPE', label: 'P/E', numeric: true, sortable: true, width: '16%', render: (r) => formatPe(r.trailingPE) },
-  { key: 'dividendYieldPercent', label: 'Dividend Yield', numeric: true, sortable: true, width: '16%', render: (r) => formatPercent(r.dividendYieldPercent) }
+  { key: 'week52High', label: '% From High', numeric: true, sortable: false, width: '13%', render: (r) => <PctFromHigh row={r} /> },
+  { key: 'trailingPE', label: 'P/E (TTM)', numeric: true, sortable: true, width: '13%', render: (r) => formatPe(r.trailingPE) },
+  { key: 'forwardPE', label: 'P/E (Fwd)', numeric: true, sortable: true, width: '13%', render: (r) => formatPe(r.forwardPE) },
+  { key: 'dividendYieldPercent', label: 'Dividend Yield', numeric: true, sortable: true, width: '14%', render: (r) => formatPercent(r.dividendYieldPercent) }
 ];
 
 function ariaSortValue(active: boolean, dir: SortDir): 'ascending' | 'descending' | 'none' {

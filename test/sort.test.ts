@@ -12,6 +12,7 @@ function row(ticker: string, marketCap: number | null): ScanRow {
     week52Low: null,
     week52High: null,
     trailingPE: null,
+    forwardPE: null,
     dividendYieldPercent: null,
     retrievedAt: '2026-06-19T00:00:00.000Z'
   };

@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import ResultsTable from '@/components/ResultsTable';
 import WatchlistManager from '@/components/WatchlistManager';
 import { parseTickers, DEFAULT_MAX_TICKERS } from '@/lib/tickers';
+
+const MAX_TICKERS = Number(process.env.NEXT_PUBLIC_MAX_TICKERS) || DEFAULT_MAX_TICKERS;
 // Filtering UI was removed; EMPTY_FILTERS is still passed to share-URL encoding
 // so links keep round-tripping (and old links with filter params still parse).
 import { EMPTY_FILTERS } from '@/lib/filters';
@@ -94,7 +96,7 @@ export default function Page() {
     if (tickers.length > 0) setInput(tickers.join(', '));
   }, []);
 
-  const preview = useMemo(() => parseTickers(input, DEFAULT_MAX_TICKERS), [input]);
+  const preview = useMemo(() => parseTickers(input, MAX_TICKERS), [input]);
   // Displayed order = sorted result rows; CSV export uses exactly this.
   const displayedRows = useMemo(
     () => (result ? sortRows(result.rows, sortKey, sortDir) : []),
@@ -321,7 +323,7 @@ export default function Page() {
       )}
 
       {limited && (
-        <p className="meta">Only the first {DEFAULT_MAX_TICKERS} tickers were scanned (MVP limit).</p>
+        <p className="meta">Only the first {MAX_TICKERS} tickers were scanned (MVP limit).</p>
       )}
 
       <p className="disclaimer">

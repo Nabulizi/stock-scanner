@@ -35,6 +35,21 @@ describe('normalizeFinnhub', () => {
     expect(row.trailingPE).toBeNull();
   });
 
+  it('extracts forward P/E when available', () => {
+    const row = normalizeFinnhub('AAPL', { name: 'Apple', currency: 'USD' }, { forwardPE: 33.39 }, AT);
+    expect(row.forwardPE).toBe(33.39);
+  });
+
+  it('normalizes negative forward P/E to null', () => {
+    const row = normalizeFinnhub('XYZ', { name: 'Lossmaker', currency: 'USD' }, { forwardPE: -5.2 }, AT);
+    expect(row.forwardPE).toBeNull();
+  });
+
+  it('returns null forward P/E when field is missing', () => {
+    const row = normalizeFinnhub('NEW', { name: 'Newly Listed', currency: 'USD' }, {}, AT);
+    expect(row.forwardPE).toBeNull();
+  });
+
   it('labels US-listed ADRs in USD even when the reporting currency differs (BABA)', () => {
     const row = normalizeFinnhub(
       'BABA',

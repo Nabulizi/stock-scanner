@@ -12,6 +12,7 @@ function row(over: Partial<ScanRow>): ScanRow {
     week52Low: 164.08,
     week52High: 260.1,
     trailingPE: 31.2,
+    forwardPE: 33.4,
     dividendYieldPercent: 0.41,
     currentPrice: 200,
     rangePosition: 0.5,
