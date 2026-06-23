@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ResultsTable from '@/components/ResultsTable';
-import FilterPanel from '@/components/FilterPanel';
 import WatchlistManager from '@/components/WatchlistManager';
 import { parseTickers, DEFAULT_MAX_TICKERS } from '@/lib/tickers';
-import { applyFilters, EMPTY_FILTERS, type FilterCriteria } from '@/lib/filters';
+// Filtering UI was removed; EMPTY_FILTERS is still passed to share-URL encoding
+// so links keep round-tripping (and old links with filter params still parse).
+import { EMPTY_FILTERS } from '@/lib/filters';
 import { runClientScan, type ScanProgress } from '@/lib/clientScan';
 import { sortRows, type SortDir, type SortKey } from '@/lib/sort';
 import { toCsv } from '@/lib/csv';
@@ -27,12 +28,55 @@ function newestTimestamp(rows: ScanRow[]): string | null {
   return rows.map((r) => r.retrievedAt).sort().at(-1) ?? null;
 }
 
+// Monochrome line icons (currentColor) so the toolbar reads as one consistent
+// set rather than a mix of mismatched emoji glyphs.
+const iconProps = {
+  width: 15,
+  height: 15,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 2,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  'aria-hidden': true
+} as const;
+
+function IconRefresh() {
+  return (
+    <svg className="btn-icon" {...iconProps}>
+      <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+      <path d="M21 3v6h-6" />
+    </svg>
+  );
+}
+
+function IconDownload() {
+  return (
+    <svg className="btn-icon" {...iconProps}>
+      <path d="M12 3v12" />
+      <path d="m7 12 5 5 5-5" />
+      <path d="M5 21h14" />
+    </svg>
+  );
+}
+
+function IconShare() {
+  return (
+    <svg className="btn-icon" {...iconProps}>
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4" />
+    </svg>
+  );
+}
+
 export default function Page() {
   const [input, setInput] = useState('');
   const [phase, setPhase] = useState<Phase>('idle');
   const [result, setResult] = useState<ScanResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [filters, setFilters] = useState<FilterCriteria>(EMPTY_FILTERS);
   const [progress, setProgress] = useState<ScanProgress>({ completed: 0, total: 0 });
   const [scannedTickers, setScannedTickers] = useState<string[]>([]);
   const [limited, setLimited] = useState(false);
@@ -43,22 +87,18 @@ export default function Page() {
   const scanningRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
 
-  // Restore tickers + filters from a shared URL on first load (no auto-scan).
+  // Restore tickers from a shared URL on first load (no auto-scan). Any filter
+  // params in an older link are ignored — the filtering UI no longer exists.
   useEffect(() => {
-    const { tickers, filters: restored } = parseShare(new URLSearchParams(window.location.search));
+    const { tickers } = parseShare(new URLSearchParams(window.location.search));
     if (tickers.length > 0) setInput(tickers.join(', '));
-    setFilters(restored);
   }, []);
 
   const preview = useMemo(() => parseTickers(input, DEFAULT_MAX_TICKERS), [input]);
-  const filteredRows = useMemo(
-    () => (result ? applyFilters(result.rows, filters) : []),
-    [result, filters]
-  );
-  // Displayed order = filtered then sorted; CSV export uses exactly this.
+  // Displayed order = sorted result rows; CSV export uses exactly this.
   const displayedRows = useMemo(
-    () => sortRows(filteredRows, sortKey, sortDir),
-    [filteredRows, sortKey, sortDir]
+    () => (result ? sortRows(result.rows, sortKey, sortDir) : []),
+    [result, sortKey, sortDir]
   );
 
   function onSort(key: SortKey) {
@@ -84,7 +124,7 @@ export default function Page() {
 
   async function copyShareUrl() {
     const tickers = scannedTickers.length > 0 ? scannedTickers : preview.valid;
-    const qs = serializeShare(tickers, filters);
+    const qs = serializeShare(tickers, EMPTY_FILTERS);
     const url = `${window.location.origin}${window.location.pathname}${qs ? `?${qs}` : ''}`;
     try {
       await navigator.clipboard.writeText(url);
@@ -150,7 +190,6 @@ export default function Page() {
     setResult(null);
     setErrorMsg(null);
     setPhase('idle');
-    setFilters(EMPTY_FILTERS);
     setProgress({ completed: 0, total: 0 });
     setScannedTickers([]);
     setLimited(false);
@@ -241,16 +280,16 @@ export default function Page() {
       </div>
 
       {hasRows && result && (
-        <>
+        <div className="results-area">
           <div className="results-toolbar">
             <button type="button" className="secondary" onClick={onRefresh} disabled={isLoading} title="Re-fetch fresh data, bypassing the cache">
-              ↻ Refresh
+              <IconRefresh /> Refresh
             </button>
             <button type="button" className="secondary" onClick={downloadCsv} disabled={displayedRows.length === 0} title="Download the displayed rows as CSV">
-              ⭳ Export CSV
+              <IconDownload /> Export CSV
             </button>
-            <button type="button" className="secondary" onClick={copyShareUrl} title="Copy a link with these tickers and filters">
-              🔗 Share
+            <button type="button" className="secondary" onClick={copyShareUrl} title="Copy a link with these tickers">
+              <IconShare /> Share
             </button>
           </div>
           {shareMsg && (
@@ -258,25 +297,14 @@ export default function Page() {
               {shareMsg}
             </p>
           )}
-          <FilterPanel
-            rows={result.rows}
-            matchCount={filteredRows.length}
-            criteria={filters}
-            onChange={setFilters}
-            onReset={() => setFilters(EMPTY_FILTERS)}
+          <ResultsTable
+            rows={displayedRows}
+            lastUpdatedAt={result.lastUpdatedAt}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onSort={onSort}
           />
-          {displayedRows.length > 0 ? (
-            <ResultsTable
-              rows={displayedRows}
-              lastUpdatedAt={result.lastUpdatedAt}
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={onSort}
-            />
-          ) : (
-            <p className="message">No companies match the current filters. Adjust or reset the filters.</p>
-          )}
-        </>
+        </div>
       )}
 
       {hasErrors && result && (

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeRangePosition, clampFraction } from '@/lib/range';
+import { computeRangePosition, clampFraction, percentFromHigh } from '@/lib/range';
 
 describe('computeRangePosition', () => {
   it('returns 0 at the low, 1 at the high, 0.5 in the middle', () => {
@@ -26,6 +26,30 @@ describe('computeRangePosition', () => {
     expect(computeRangePosition(15, null, 20)).toBeNull();
     expect(computeRangePosition(15, 10, null)).toBeNull();
     expect(computeRangePosition(Number.NaN, 10, 20)).toBeNull();
+  });
+});
+
+describe('percentFromHigh', () => {
+  it('is 0 at the high, negative below it', () => {
+    expect(percentFromHigh(20, 20)).toBe(0);
+    expect(percentFromHigh(18, 20)).toBeCloseTo(-10);
+    expect(percentFromHigh(15, 20)).toBeCloseTo(-25);
+  });
+
+  it('is positive for a fresh high above the prior 52-week high', () => {
+    expect(percentFromHigh(22, 20)).toBeCloseTo(10);
+  });
+
+  it('returns null when price or high is missing/non-finite', () => {
+    expect(percentFromHigh(null, 20)).toBeNull();
+    expect(percentFromHigh(18, null)).toBeNull();
+    expect(percentFromHigh(Number.NaN, 20)).toBeNull();
+    expect(percentFromHigh(18, Number.POSITIVE_INFINITY)).toBeNull();
+  });
+
+  it('returns null for a non-positive high', () => {
+    expect(percentFromHigh(18, 0)).toBeNull();
+    expect(percentFromHigh(18, -5)).toBeNull();
   });
 });
 

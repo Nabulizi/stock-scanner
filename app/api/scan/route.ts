@@ -59,9 +59,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json(empty, { status: 200 });
   }
 
-  // Finnhub is primary. If an Alpha Vantage key is configured, it becomes an
-  // automatic failover (used per-ticker only when Finnhub rate-limits or errors).
-  const providers: QuoteProvider[] = [createFinnhubProvider(apiKey)];
+  // Finnhub is primary. Multiple Finnhub keys (comma-separated) are each
+  // registered as separate providers for round-robin failover on rate limits.
+  // Alpha Vantage is appended last as the final fallback if configured.
+  const finnhubKeys = apiKey.split(',').map((k) => k.trim()).filter(Boolean);
+  const providers: QuoteProvider[] = finnhubKeys.map((key) => createFinnhubProvider(key));
   const alphaVantageKey = process.env.ALPHAVANTAGE_API_KEY;
   if (alphaVantageKey) providers.push(createAlphaVantageProvider(alphaVantageKey));
   const provider = providers.length > 1 ? createFallbackProvider(providers) : providers[0];

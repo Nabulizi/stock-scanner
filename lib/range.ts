@@ -21,6 +21,23 @@ export function computeRangePosition(
   return (price - low) / (high - low);
 }
 
+/**
+ * Percentage the current `price` sits below (or above) the 52-week `high`,
+ * e.g. -6.4 means the price is 6.4% under the high; 0 means at the high; a
+ * positive value means a fresh high above the prior 52-week high.
+ *
+ * Returns null when price or high is missing/non-finite, or when high <= 0
+ * (the percentage would be undefined or meaningless).
+ */
+export function percentFromHigh(
+  price: number | null | undefined,
+  high: number | null | undefined
+): number | null {
+  if (!isFinite(price) || !isFinite(high)) return null;
+  if (high <= 0) return null;
+  return ((price - high) / high) * 100;
+}
+
 /** Clamp a fraction to [0, 1] for display. */
 export function clampFraction(value: number): number {
   if (!Number.isFinite(value)) return 0;
