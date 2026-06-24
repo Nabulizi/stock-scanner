@@ -86,6 +86,7 @@ export function normalizeFinnhub(
   const marketCapMillions = toNumber(profile.marketCapitalization);
   const peTtm = toNumber(metric['peTTM']);
   const forwardPeRaw = toNumber(metric['forwardPE']);
+  const ytdRaw = toNumber(metric['yearToDatePriceReturnDaily']);
   const low = toNumber(metric['52WeekLow']);
   const high = toNumber(metric['52WeekHigh']);
   // A real stock price is never <= 0; treat that as "no price" (unavailable).
@@ -108,6 +109,7 @@ export function normalizeFinnhub(
     forwardPE: forwardPeRaw != null && forwardPeRaw > 0 ? forwardPeRaw : null,
     // Already a percentage per Finnhub docs. A real 0 (non-payer) is preserved.
     dividendYieldPercent: toNumber(metric['dividendYieldIndicatedAnnual']),
+    ytdReturn: ytdRaw,
     currentPrice,
     // Raw (unclamped) position; null when price or range is unavailable/invalid.
     rangePosition: computeRangePosition(currentPrice, low, high),

@@ -23,6 +23,7 @@ function row(over: Partial<ScanRow>): ScanRow {
     trailingPE: 15,
     forwardPE: null,
     dividendYieldPercent: 2,
+    ytdReturn: null,
     retrievedAt: '2026-06-19T00:00:00.000Z',
     ...over
   };

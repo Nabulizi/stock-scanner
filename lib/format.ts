@@ -61,6 +61,13 @@ export function formatPercent(value: number | null): string {
   return `${value.toFixed(2)}%`;
 }
 
+/** Format a signed return (e.g. YTD). Positive gets "+", negative gets "−". Null -> "N/A". */
+export function formatReturn(value: number | null): string {
+  if (!isUsable(value)) return NA;
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${value.toFixed(2)}%`;
+}
+
 /** Format trailing P/E. Null / non-finite / non-positive -> "N/A". */
 export function formatPe(value: number | null): string {
   if (!isUsable(value) || value <= 0) return NA;

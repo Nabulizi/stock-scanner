@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatMarketCap, formatCurrency, formatPercent, formatPe, NA } from '@/lib/format';
+import { formatMarketCap, formatCurrency, formatPercent, formatReturn, formatPe, NA } from '@/lib/format';
 
 describe('formatMarketCap', () => {
   it('uses T/B/M suffixes', () => {
@@ -48,5 +48,20 @@ describe('formatPe', () => {
     expect(formatPe(null)).toBe(NA);
     expect(formatPe(0)).toBe(NA);
     expect(formatPe(-5)).toBe(NA);
+  });
+});
+
+describe('formatReturn', () => {
+  it('adds + prefix for positive values', () => {
+    expect(formatReturn(9.25)).toBe('+9.25%');
+  });
+  it('shows negative values with minus', () => {
+    expect(formatReturn(-4.82)).toBe('-4.82%');
+  });
+  it('formats zero without + prefix', () => {
+    expect(formatReturn(0)).toBe('0.00%');
+  });
+  it('returns N/A for null', () => {
+    expect(formatReturn(null)).toBe(NA);
   });
 });

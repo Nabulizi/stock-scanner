@@ -3,9 +3,9 @@
 import { type ReactNode } from 'react';
 import type { ScanRow } from '@/lib/types';
 import { type SortDir, type SortKey } from '@/lib/sort';
-import { formatCurrency, formatMarketCap, formatPe, formatPercent, NA } from '@/lib/format';
+import { formatCurrency, formatMarketCap, formatPe, formatPercent, formatReturn, NA } from '@/lib/format';
 import { rowFreshness, FRESHNESS_LABEL, type Freshness } from '@/lib/freshness';
-import { percentFromHigh } from '@/lib/range';
+import { clampFraction, computeRangePosition } from '@/lib/range';
 
 const FRESHNESS_TITLE: Record<Freshness, string> = {
   fresh: 'Fetched in this scan',
@@ -45,23 +45,33 @@ function IdentityCell({ row, freshness }: { row: ScanRow; freshness: Freshness }
   );
 }
 
-// How far the current price sits below the 52-week high (e.g. "-6.40%"). One
-// unambiguous number instead of the old positional bar + confusing range %; the
-// full low–high range stays available in the tooltip and screen-reader label.
-function PctFromHigh({ row }: { row: ScanRow }) {
-  const pct = percentFromHigh(row.currentPrice ?? null, row.week52High);
-  if (pct === null) {
+// 52-week range bar: $low ━━━●━━ $high with a dot marking the current price.
+// Abbreviated prices (no cents for values ≥ $10). Accessible via aria-label.
+function RangeBar({ row }: { row: ScanRow }) {
+  const low = row.week52Low;
+  const high = row.week52High;
+  const price = row.currentPrice ?? null;
+
+  if (low == null || high == null) {
     return <span className="na">{NA}</span>;
   }
-  const range = `${formatCurrency(row.week52Low, row.currency)} – ${formatCurrency(row.week52High, row.currency)}`;
+
+  const position = computeRangePosition(price, low, high);
+  const pct = position != null ? clampFraction(position) * 100 : null;
+
+  const abbrev = (v: number) => v >= 10 ? `$${Math.round(v)}` : `$${v.toFixed(2)}`;
+  const ariaLabel = price != null
+    ? `Current price ${abbrev(price)} in 52-week range ${abbrev(low)} to ${abbrev(high)}`
+    : `52-week range ${abbrev(low)} to ${abbrev(high)}`;
+
   return (
-    <span
-      className="pct-from-high"
-      title={`52-week range: ${range}`}
-      aria-label={`${formatPercent(pct)} from the 52-week high (range ${range})`}
-    >
-      {formatPercent(pct)}
-    </span>
+    <div className="range-bar" aria-label={ariaLabel} title={ariaLabel}>
+      <span className="range-low">{abbrev(low)}</span>
+      <span className="range-track">
+        {pct != null && <span className="range-dot" style={{ left: `${pct}%` }} />}
+      </span>
+      <span className="range-high">{abbrev(high)}</span>
+    </div>
   );
 }
 
@@ -76,6 +86,7 @@ interface Column {
   width: string;
   truncate?: boolean;
   title?: string;
+  center?: boolean;
   // Identity columns render a custom stacked cell (handled in the body loop)
   // instead of `render`, so `render` is optional for them.
   identity?: boolean;
@@ -85,15 +96,15 @@ interface Column {
 const COLUMNS: Column[] = [
   // Merged identity column sorts by ticker only. Sorting by company name is
   // intentionally dropped along with the separate Company column.
-  { key: 'ticker', label: 'Symbol', numeric: false, sortable: true, identity: true, width: '20%' },
-  { key: 'marketCap', label: 'Market Cap', numeric: true, sortable: true, width: '14%', render: (r) => formatMarketCap(r.marketCap, r.currency) },
-  { key: 'currentPrice', label: 'Price', numeric: true, sortable: false, width: '13%', render: (r) => formatCurrency(r.currentPrice ?? null, r.currency) },
-  // Derived metric with no backing sort key, so this column is not sortable
-  // (sorting lives in lib/sort and only supports raw ScanRow fields).
-  { key: 'week52High', label: '% From High', numeric: true, sortable: false, width: '13%', render: (r) => <PctFromHigh row={r} /> },
-  { key: 'trailingPE', label: 'P/E (TTM)', numeric: true, sortable: true, width: '13%', render: (r) => formatPe(r.trailingPE) },
-  { key: 'forwardPE', label: 'P/E (Fwd)', numeric: true, sortable: true, width: '13%', render: (r) => formatPe(r.forwardPE) },
-  { key: 'dividendYieldPercent', label: 'Dividend Yield', numeric: true, sortable: true, width: '14%', render: (r) => formatPercent(r.dividendYieldPercent) }
+  { key: 'ticker', label: 'Symbol', numeric: false, sortable: true, identity: true, width: '17%' },
+  { key: 'marketCap', label: 'Mkt Cap', numeric: true, sortable: true, width: '11%', render: (r) => formatMarketCap(r.marketCap, r.currency) },
+  { key: 'currentPrice', label: 'Price', numeric: true, sortable: false, width: '11%', render: (r) => formatCurrency(r.currentPrice ?? null, r.currency) },
+  { key: 'ytdReturn', label: 'YTD', numeric: true, sortable: true, width: '11%', render: (r) => formatReturn(r.ytdReturn) },
+  // Range bar is not sortable (it's a composite visual, not a single numeric).
+  { key: 'week52High', label: '52W Range', numeric: false, sortable: false, center: true, width: '17%', render: (r) => <RangeBar row={r} /> },
+  { key: 'trailingPE', label: 'P/E (TTM)', numeric: true, sortable: true, width: '11%', render: (r) => formatPe(r.trailingPE) },
+  { key: 'forwardPE', label: 'P/E (Fwd)', numeric: true, sortable: true, width: '11%', render: (r) => formatPe(r.forwardPE) },
+  { key: 'dividendYieldPercent', label: 'Div Yield', numeric: true, sortable: true, width: '11%', render: (r) => formatPercent(r.dividendYieldPercent) }
 ];
 
 function ariaSortValue(active: boolean, dir: SortDir): 'ascending' | 'descending' | 'none' {
@@ -139,8 +150,6 @@ export default function ResultsTable({ rows, lastUpdatedAt, sortKey, sortDir, on
           <tr>
             {COLUMNS.map((col, idx) => {
               const active = col.sortable && col.key === sortKey;
-              // Numeric headers put the arrow on the left so the label hugs the
-              // right edge, lining up with the right-aligned values below.
               const arrow = (
                 <span className={active ? 'arrow arrow-active' : 'arrow'} aria-hidden="true">
                   {active ? (sortDir === 'asc' ? '▲' : '▼') : '▼'}
@@ -155,17 +164,8 @@ export default function ResultsTable({ rows, lastUpdatedAt, sortKey, sortDir, on
                 >
                   {col.sortable ? (
                     <button type="button" className="sort-btn" onClick={() => onSort(col.key)} title={col.title}>
-                      {col.numeric ? (
-                        <>
-                          {arrow}
-                          {col.label}
-                        </>
-                      ) : (
-                        <>
-                          {col.label}
-                          {arrow}
-                        </>
-                      )}
+                      {col.label}
+                      {arrow}
                     </button>
                   ) : (
                     col.label

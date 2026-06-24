@@ -98,6 +98,8 @@ export function normalizeAlphaVantage(
     forwardPE: forwardPe != null && forwardPe > 0 ? forwardPe : null,
     // Decimal fraction -> percent. A real 0 (non-payer) is preserved.
     dividendYieldPercent: yieldDecimal == null ? null : yieldDecimal * 100,
+    // Alpha Vantage OVERVIEW doesn't include YTD return.
+    ytdReturn: null,
     currentPrice,
     rangePosition: computeRangePosition(currentPrice, low, high),
     retrievedAt

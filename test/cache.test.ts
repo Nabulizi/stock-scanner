@@ -14,6 +14,7 @@ function row(ticker: string, retrievedAt: string): ScanRow {
     trailingPE: null,
     forwardPE: null,
     dividendYieldPercent: null,
+    ytdReturn: null,
     retrievedAt
   };
 }

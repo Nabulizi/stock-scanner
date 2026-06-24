@@ -14,6 +14,7 @@ function row(ticker: string, marketCap: number | null): ScanRow {
     trailingPE: null,
     forwardPE: null,
     dividendYieldPercent: null,
+    ytdReturn: null,
     retrievedAt: '2026-06-19T00:00:00.000Z'
   };
 }

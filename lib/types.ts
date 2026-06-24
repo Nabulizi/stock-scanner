@@ -17,6 +17,8 @@ export interface ScanRow {
   forwardPE: number | null;
   /** Dividend yield expressed as a percentage value (e.g. 3.05 means 3.05%). */
   dividendYieldPercent: number | null;
+  /** Year-to-date price return as a percentage (e.g. 9.25 means +9.25%). */
+  ytdReturn: number | null;
   /** Current price in `currency`. Optional — populated only when the provider quote is available. */
   currentPrice?: number | null;
   /** Position within the 52-week range, 0..1 (low..high). Null when inputs are missing/invalid. */

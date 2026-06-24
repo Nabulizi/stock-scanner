@@ -14,6 +14,7 @@ function makeRow(ticker: string, cached = false): ScanRow {
     trailingPE: 10,
     forwardPE: null,
     dividendYieldPercent: 0,
+    ytdReturn: null,
     cached,
     retrievedAt: '2026-06-19T00:00:00.000Z'
   };

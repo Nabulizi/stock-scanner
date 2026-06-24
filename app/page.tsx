@@ -14,6 +14,7 @@ import { sortRows, type SortDir, type SortKey } from '@/lib/sort';
 import { toCsv } from '@/lib/csv';
 import { serializeShare, parseShare } from '@/lib/shareUrl';
 import type { ScanError, ScanRow } from '@/lib/types';
+import type { FearGreedData } from '@/lib/fearGreed';
 
 type Phase = 'idle' | 'loading' | 'done' | 'error';
 
@@ -85,9 +86,18 @@ export default function Page() {
   const [sortKey, setSortKey] = useState<SortKey>('marketCap');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [shareMsg, setShareMsg] = useState<string | null>(null);
+  const [fearGreed, setFearGreed] = useState<FearGreedData | null>(null);
 
   const scanningRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
+
+  // Fetch market sentiment on mount (non-blocking).
+  useEffect(() => {
+    fetch('/api/feargreed')
+      .then((r) => r.json())
+      .then((d: FearGreedData | null) => { if (d && typeof d.score === 'number') setFearGreed(d); })
+      .catch(() => {});
+  }, []);
 
   // Restore tickers from a shared URL on first load (no auto-scan). Any filter
   // params in an older link are ignored — the filtering UI no longer exists.
@@ -213,6 +223,14 @@ export default function Page() {
         Compare fundamentals across a watchlist. Enter tickers separated by commas, spaces, or new lines.
       </p>
 
+      {fearGreed && (
+        <div className={`fear-greed-badge fg-${fearGreed.label.toLowerCase().replace(' ', '-')}`} title="CNN Fear & Greed Index — market sentiment gauge">
+          <span className="fg-label">Market Sentiment</span>
+          <span className="fg-score">{fearGreed.score}</span>
+          <span className="fg-desc">{fearGreed.label}</span>
+        </div>
+      )}
+
       <form className="form" onSubmit={onScan}>
         <label htmlFor="tickers">Tickers</label>
         <textarea
@@ -298,6 +316,26 @@ export default function Page() {
             <p className="meta" role="status" aria-live="polite">
               {shareMsg}
             </p>
+          )}
+          {/* Data quality banner */}
+          {result.errors.length > 0 && (
+            <div className="data-quality-banner">
+              <span className="dq-stat">{result.rows.length}/{result.rows.length + result.errors.length} tickers loaded</span>
+              {(() => {
+                const nullFields = result.rows.reduce((count, r) => {
+                  let n = 0;
+                  if (r.marketCap == null) n++;
+                  if (r.trailingPE == null) n++;
+                  if (r.forwardPE == null) n++;
+                  if (r.dividendYieldPercent == null) n++;
+                  if (r.currentPrice == null) n++;
+                  return count + n;
+                }, 0);
+                const totalFields = result.rows.length * 5;
+                const coverage = totalFields > 0 ? Math.round(((totalFields - nullFields) / totalFields) * 100) : 100;
+                return coverage < 100 ? <span className="dq-stat">{coverage}% field coverage</span> : null;
+              })()}
+            </div>
           )}
           <ResultsTable
             rows={displayedRows}

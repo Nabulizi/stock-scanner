@@ -8,6 +8,7 @@ export type SortKey =
   | 'trailingPE'
   | 'forwardPE'
   | 'dividendYieldPercent'
+  | 'ytdReturn'
   | 'week52High'
   | 'week52Low';
 
@@ -19,6 +20,7 @@ const NUMERIC_KEYS: SortKey[] = [
   'trailingPE',
   'forwardPE',
   'dividendYieldPercent',
+  'ytdReturn',
   'week52High',
   'week52Low'
 ];

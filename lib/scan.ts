@@ -1,6 +1,7 @@
 import type { ScanError, ScanResponse, ScanRow } from './types';
 import { ProviderError, type QuoteProvider } from './provider';
 import { getCached, setCached } from './cache';
+import { isOpen, recordFailure, recordSuccess } from './circuitBreaker';
 
 export interface ScanOptions {
   ttlSeconds?: number;
@@ -42,6 +43,11 @@ export async function scanTickers(
       const ticker = queue.shift();
       if (ticker === undefined) return;
       try {
+        // Circuit breaker: skip tickers that have failed too many times recently.
+        if (isOpen(ticker)) {
+          errors.push({ ticker, code: 'PROVIDER_ERROR', message: 'Skipped — too many recent failures (circuit open).' });
+          continue;
+        }
         const cachedRow = useCache && !refresh ? getCached(ticker) : null;
         if (cachedRow) {
           // Served from cache — keep its original retrievedAt, flag as cached.
@@ -50,9 +56,14 @@ export async function scanTickers(
           const row = await provider.fetchCompany(ticker);
           if (useCache) setCached(ticker, row, ttlSeconds);
           rows.push({ ...row, cached: false });
+          recordSuccess(ticker);
         }
       } catch (err) {
         errors.push(toScanError(ticker, err));
+        // NOT_FOUND is a permanent condition (bad ticker), not a transient failure.
+        if (!(err instanceof ProviderError && err.code === 'NOT_FOUND')) {
+          recordFailure(ticker);
+        }
       }
     }
   }

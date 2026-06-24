@@ -50,6 +50,16 @@ describe('normalizeFinnhub', () => {
     expect(row.forwardPE).toBeNull();
   });
 
+  it('extracts YTD return when available', () => {
+    const row = normalizeFinnhub('AAPL', { name: 'Apple', currency: 'USD' }, { yearToDatePriceReturnDaily: 9.25 }, AT);
+    expect(row.ytdReturn).toBe(9.25);
+  });
+
+  it('returns null YTD return when field is missing', () => {
+    const row = normalizeFinnhub('NEW', { name: 'Newly Listed', currency: 'USD' }, {}, AT);
+    expect(row.ytdReturn).toBeNull();
+  });
+
   it('labels US-listed ADRs in USD even when the reporting currency differs (BABA)', () => {
     const row = normalizeFinnhub(
       'BABA',
