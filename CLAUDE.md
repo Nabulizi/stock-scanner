@@ -5,9 +5,11 @@ Guidance for working in this repo. Keep it current when conventions change.
 ## Project
 
 Next.js 14 (App Router, TypeScript) stock scanner. A user enters a watchlist of
-tickers and gets a sortable comparison table of industry, market cap, 52-week
-range, trailing P/E, dividend yield, and current price. Informational only — the
-UI must never give buy/sell advice or imply missing data equals zero.
+tickers and gets a sortable comparison table of 13 columns (Symbol, Score,
+Mkt Cap, Price, YTD, 52W Range, P/E TTM, P/E Fwd, Div Yld, FCF Yld, Rev Grw,
+D/E, EV/EBITDA) plus a weighted composite scoring system (10 criteria, tier
+weights ×3/×2/×1, hard floor disqualifier). Informational only — the UI must
+never give buy/sell advice or imply missing data equals zero.
 
 ## Commands
 
@@ -35,6 +37,12 @@ and `npm run build` — CI runs all four on push/PR (`.github/workflows/ci.yml`)
 - `lib/scan.ts` — per-ticker orchestration with bounded concurrency + cache.
 - `lib/clientScan.ts` — drives the scan one ticker at a time from the browser for
   real "X of N" progress (one POST per ticker).
+- `lib/scoring.ts` — weighted composite scoring (10 criteria, 3 tier weights,
+  hard floor rule). Pure functions: `computeBreakdown`, `totalScore`, `scoreRow`,
+  `isDisqualified`, `convictionTier`. Max +17, min −16.
+- `lib/circuitBreaker.ts` — per-ticker failure tracking; skips after 3 failures
+  for 60 s cooldown.
+- `lib/fearGreed.ts` + `app/api/feargreed/route.ts` — CNN Fear & Greed badge.
 - `lib/{tickers,filters,sort,format,csv,shareUrl,range,freshness}.ts` — pure,
   heavily-tested helpers. UI in `app/page.tsx` + `components/`.
 
@@ -64,9 +72,11 @@ and `npm run build` — CI runs all four on push/PR (`.github/workflows/ci.yml`)
 
 ## Environment
 
-Copy `.env.example` to `.env.local` (git-ignored). `FINNHUB_API_KEY` is required;
-`ALPHAVANTAGE_API_KEY` is optional (enables failover). `MAX_TICKERS` (default 10)
-and `CACHE_TTL_SECONDS` (default 60) are optional.
+Copy `.env.example` to `.env.local` (git-ignored). `FINNHUB_API_KEY` is required
+(supports comma-separated multiple keys for combined rate limits);
+`ALPHAVANTAGE_API_KEY` is optional (enables failover). `MAX_TICKERS` (default 20),
+`NEXT_PUBLIC_MAX_TICKERS` (default 20), and `CACHE_TTL_SECONDS` (default 60) are
+optional.
 
 > The local `.env.local` may contain `NODE_TLS_REJECT_UNAUTHORIZED=0` as a
 > corporate-proxy workaround. It disables TLS verification (insecure); the proper
@@ -81,3 +91,10 @@ and `CACHE_TTL_SECONDS` (default 60) are optional.
 - Alpha Vantage free tier is ~25 req/day + ~1 req/sec; `OVERVIEW` (fundamentals)
   is fetched first, `GLOBAL_QUOTE` (price) is best-effort so a throttled price
   call never discards the fundamentals.
+- **Scoring system:** `lib/scoring.ts` uses tier weights (×3 Survival, ×2
+  Fundamental, ×1 Timing). A −1 on Earnings Quality or Leverage (weighted −3)
+  triggers a hard floor disqualifier — the stock is forced to "Pass" regardless
+  of total. The breakdown is visible per-row via an expandable detail row.
+  Thresholds: 12+ High Conviction, 7–11 Watchlist, <7 Pass.
+- `SortKey` includes `'score'` which is not a `ScanRow` field — `sortRows`
+  accepts an optional `scoreMap` parameter for this virtual column.
